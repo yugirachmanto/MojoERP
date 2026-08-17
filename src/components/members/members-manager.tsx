@@ -76,6 +76,7 @@ export function MembersManager({
   const router = useRouter();
   const { isPending, run } = useAction();
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("member");
   const [approvalLevel, setApprovalLevel] = useState<string>("");
@@ -91,19 +92,21 @@ export function MembersManager({
         department_id: departmentId || null,
       })
     );
-    if (result.success) {
-      const data = result.data as { emailSent?: boolean } | undefined;
-      toast.success(
-        data?.emailSent === false
-          ? "Undangan tersimpan, tapi email belum terkirim"
-          : "Undangan dikirim"
-      );
+    if (result.success && result.data?.actionLink) {
+      setInviteLink(result.data.actionLink);
       setInviteOpen(false);
       setEmail("");
       setRole("member");
       setApprovalLevel("");
       setDepartmentId("");
       router.refresh();
+    }
+  }
+
+  function handleCopyLink() {
+    if (inviteLink) {
+      navigator.clipboard.writeText(inviteLink);
+      toast.success("Link undangan disalin ke clipboard!");
     }
   }
 
@@ -226,6 +229,31 @@ export function MembersManager({
                 </Button>
               </DialogFooter>
             </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Invite Link Popup Dialog */}
+        <Dialog open={Boolean(inviteLink)} onOpenChange={(open) => !open && setInviteLink(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Link Undangan Berhasil Dibuat</DialogTitle>
+              <DialogDescription>
+                Salin link di bawah ini dan kirimkan secara manual kepada anggota baru.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div className="rounded-lg border bg-muted p-3 text-xs font-mono break-all max-h-32 overflow-y-auto">
+                {inviteLink}
+              </div>
+              <Button onClick={handleCopyLink} className="w-full">
+                Salin Link Undangan
+              </Button>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setInviteLink(null)}>
+                Tutup
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>

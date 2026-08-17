@@ -74,7 +74,7 @@ export async function updateOrganization(
 export async function inviteMember(
   orgId: string,
   input: unknown
-): Promise<ActionResult<{ emailSent: boolean }>> {
+): Promise<ActionResult<{ actionLink: string }>> {
   const parsed = inviteMemberSchema.safeParse(input);
   if (!parsed.success) {
     return {
@@ -94,16 +94,7 @@ export async function inviteMember(
     );
   }
 
-  let emailSent = false;
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-  const { data: inviterProfile } = await service
-    .from("profiles")
-    .select("full_name")
-    .eq("id", membership.user_id)
-    .maybeSingle();
-
-  const inviterName = inviterProfile?.full_name ?? membership.user_id.slice(0, 8);
-  const orgName = membership.organizations?.name ?? "ProjectHub";
   const { data: linkData, error: linkError } = await service.auth.admin.generateLink({
     type: "invite",
     email: parsed.data.email,
@@ -120,23 +111,7 @@ export async function inviteMember(
   }
 
   const targetId = linkData.user.id;
-  emailSent = await sendResendEmail({
-    to: parsed.data.email,
-    subject: `Undangan bergabung ke ${orgName}`,
-    html: `
-      <div style="font-family:Arial,sans-serif;line-height:1.6;color:#111">
-        <h2>Anda diundang ke ${orgName}</h2>
-        <p>${inviterName} mengundang Anda untuk bergabung sebagai <strong>${parsed.data.role}</strong>.</p>
-        <p>
-          <a href="${linkData.properties.action_link}" style="display:inline-block;padding:12px 16px;background:#111;color:#fff;text-decoration:none;border-radius:8px">
-            Terima Undangan
-          </a>
-        </p>
-        <p style="color:#666;font-size:12px">Jika tombol tidak berfungsi, salin link ini: ${linkData.properties.action_link}</p>
-      </div>
-    `,
-    text: `Anda diundang ke ${orgName} oleh ${inviterName} sebagai ${parsed.data.role}. Buka link ini untuk menerima undangan: ${linkData.properties.action_link}`,
-  });
+  const actionLink = linkData.properties.action_link;
 
   const supabase = await createClient();
   const { error: insertError } = await supabase.from("organization_members").upsert(
@@ -155,7 +130,7 @@ export async function inviteMember(
 
   revalidatePath(`/orgs/${orgId}/settings`);
   revalidatePath(`/orgs/${orgId}/members`);
-  return ok({ emailSent });
+  return ok({ actionLink });
 }
 
 export async function acceptInvitation(orgId: string): Promise<ActionResult> {
