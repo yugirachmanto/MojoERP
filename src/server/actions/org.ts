@@ -99,7 +99,7 @@ export async function inviteMember(
     type: "invite",
     email: parsed.data.email,
     options: {
-      redirectTo: `${siteUrl}/auth/callback?next=/onboarding`,
+      redirectTo: `${siteUrl}/auth/confirm`,
       data: {
         invited_by: membership.user_id,
         invited_org_id: orgId,
