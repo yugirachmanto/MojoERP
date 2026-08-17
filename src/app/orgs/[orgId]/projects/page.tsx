@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrg } from "@/lib/auth";
 import { PROJECT_STATUS_STYLES } from "@/lib/constants";
@@ -9,6 +8,7 @@ import { formatDate } from "@/lib/utils";
 import { NewProjectDialog } from "@/components/projects/new-project-dialog";
 import { getServerLanguage } from "@/lib/i18n/server";
 import { translate } from "@/lib/i18n";
+import { FolderKanban } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -62,36 +62,43 @@ export default async function ProjectsPage({
   const memberOptions = Array.from(memberNames, ([id, name]) => ({ id, name }));
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{t("projects.title")}</h1>
-          <p className="text-sm text-muted-foreground">
-            {t("projects.count", { count: (projects ?? []).length })}
-          </p>
+    <div className="space-y-6 pb-12">
+      {/* Bento Hero Header */}
+      <div className="relative overflow-hidden rounded-3xl border bg-gradient-to-br from-primary/10 via-background to-muted/40 p-8 shadow-sm">
+        <div className="absolute right-6 top-6 hidden md:block opacity-20">
+          <FolderKanban className="h-32 w-32 text-primary" />
         </div>
-        <NewProjectDialog orgId={orgId} members={memberOptions} />
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+              Workspace Projects
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight">{t("projects.title")}</h1>
+            <p className="text-sm text-muted-foreground">
+              {t("projects.count", { count: (projects ?? []).length })}
+            </p>
+          </div>
+          <NewProjectDialog orgId={orgId} members={memberOptions} />
+        </div>
       </div>
 
       {!projects || projects.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
-            <p className="text-sm text-muted-foreground">{t("projects.empty")}</p>
-            <NewProjectDialog orgId={orgId} members={memberOptions} />
-          </CardContent>
-        </Card>
+        <div className="rounded-3xl border border-dashed p-16 text-center space-y-4 bg-card">
+          <p className="text-sm text-muted-foreground">{t("projects.empty")}</p>
+          <NewProjectDialog orgId={orgId} members={memberOptions} />
+        </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {projects.map((project) => (
             <Link key={project.id} href={`/orgs/${orgId}/projects/${project.id}`}>
-              <Card className="h-full transition-shadow hover:shadow-md">
-                <CardContent className="flex h-full flex-col gap-3 p-5">
+              <div className="group h-full rounded-3xl border bg-card p-6 shadow-xs transition-all hover:shadow-md hover:scale-[1.01] flex flex-col justify-between">
+                <div className="space-y-3">
                   <div className="flex items-start justify-between gap-2">
-                    <h3 className="line-clamp-2 text-base font-semibold">
+                    <h3 className="line-clamp-2 text-base font-bold group-hover:text-primary transition-colors">
                       {project.name}
                     </h3>
                     <Badge
-                      className={`shrink-0 ${PROJECT_STATUS_STYLES[project.status]}`}
+                      className={`shrink-0 capitalize ${PROJECT_STATUS_STYLES[project.status]}`}
                     >
                       {project.status.replace("_", " ")}
                     </Badge>
@@ -101,16 +108,16 @@ export default async function ProjectsPage({
                       {project.description}
                     </p>
                   )}
-                  <div className="mt-auto flex items-center justify-between text-xs text-muted-foreground">
-                    <span>
-                      {formatDate(project.start_date)} — {formatDate(project.end_date)}
-                    </span>
-                    <span>
-                      {project.ai_monitoring_enabled ? "AI aktif" : "AI nonaktif"}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
+                </div>
+                <div className="mt-6 flex items-center justify-between text-xs text-muted-foreground pt-3 border-t">
+                  <span className="font-medium">
+                    {formatDate(project.start_date)} — {formatDate(project.end_date)}
+                  </span>
+                  <Badge variant="outline" className="text-[10px]">
+                    {project.ai_monitoring_enabled ? "AI aktif" : "AI nonaktif"}
+                  </Badge>
+                </div>
+              </div>
             </Link>
           ))}
         </div>
